@@ -1,0 +1,2 @@
+on init
+    symlink /dev/block/platform/16440000.sdhc /dev/block/platform/bdm

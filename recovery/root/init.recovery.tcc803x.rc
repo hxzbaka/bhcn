@@ -1,0 +1,91 @@
+import init.recovery.${ro.hardware}.${ro.bootmode}.rc
+
+on early-init
+    write /proc/sys/kernel/printk 1
+
+on fs 
+mount  ext4    /dev/block/platform/16440000.sdhc/by-name/vendor  /vendor ro      wait
+
+on post-fs-data
+	insmod /vendor/lib/ntfs/jnl.ko
+	insmod /vendor/lib/ntfs/ufsd.ko
+#	insmod /vendor/lib/mmc/sdhci-tcc-mod.ko
+#	insmod /vendor/lib/usb/dwc3/dwc3.ko
+#	insmod /vendor/lib/usb/dwc3/dwc3-tcc.ko
+#	insmod /vendor/lib/usb/dwc3/dwc3-of-simple.ko
+#	insmod /vendor/lib/usb/host/ehci-hcd.ko
+#	insmod /vendor/lib/usb/host/ehci-tcc.ko
+#	insmod /vendor/lib/usb/host/ohci-hcd.ko
+#	insmod /vendor/lib/usb/host/ohci-tcc.ko
+#	insmod /vendor/lib/usb/host/xhci-hcd.ko
+#	insmod /vendor/lib/usb/host/ehci-platform.ko
+#	insmod /vendor/lib/usb/host/ohci-platform.ko
+#	insmod /vendor/lib/usb/host/xhci-plat-hcd.ko
+#	insmod /vendor/lib/usb/host/ehci-pci.ko
+#	insmod /vendor/lib/usb/host/ohci-pci.ko
+#	insmod /vendor/lib/usb/host/xhci-pci.ko
+#	insmod /vendor/lib/usb/storage/usb-storage.ko
+#	insmod /vendor/lib/usb/dwc_otg/tcc_dwc_otg.ko
+
+on boot
+	write /sys/module/tcc_dwc_otg/parameters/vbus_control_enable 1
+	write /sys/devices/platform/11980000.dwc_otg/drdmode host
+	write /sys/devices/platform/11980000.dwc_otg/vbus on
+	write /sys/devices/platform/11980000.dwc_otg/phystatus on
+
+	write /sys/module/ehci_tcc/parameters/vbus_control_enable 1
+	write /sys/devices/platform/11a00000.ehci/vbus on
+
+	write /sys/block/mmcblk0boot0/force_ro 0
+	write /sys/block/mmcblk0boot1/force_ro 0
+
+    chmod 0660 /dev/ttyAMA2
+    write /sys/class/gpio/export 61
+    write /sys/class/gpio/gpio61/direction "out"
+    chmod 0660 /sys/class/gpio/gpio61/value
+    write /sys/class/gpio/gpio61/value 1
+    write /sys/class/gpio/export 62
+    write /sys/class/gpio/gpio62/direction "out"
+    chmod 0660 /sys/class/gpio/gpio62/value
+    write /sys/class/gpio/gpio62/value 1
+
+    symlink /sbin/busybox /sbin/cat
+    symlink /sbin/busybox /sbin/chmod
+    symlink /sbin/busybox /sbin/chown
+    symlink /sbin/busybox /sbin/cp
+    symlink /sbin/busybox /sbin/dd
+    symlink /sbin/busybox /sbin/df
+    symlink /sbin/busybox /sbin/echo
+    symlink /sbin/busybox /sbin/grep
+    symlink /sbin/busybox /sbin/insmod
+    symlink /sbin/busybox /sbin/ls
+    symlink /sbin/busybox /sbin/lsmod
+    symlink /sbin/busybox /sbin/mkdir
+    symlink /sbin/busybox /sbin/mount
+    symlink /sbin/busybox /sbin/mv
+    symlink /sbin/busybox /sbin/ps
+    symlink /sbin/busybox /sbin/rm
+    symlink /sbin/busybox /sbin/rmmod
+    symlink /sbin/busybox /sbin/umount
+    symlink /sbin/busybox /sbin/vi
+    symlink /sbin/busybox /sbin/tail
+
+    umount /vendor
+
+service console /sbin/sh
+    seclabel u:r:shell:s0
+    console
+    disabled
+    
+service recovery_mcuif_svc /tmp/recovery_mcuif_svc_static
+    critical
+    seclabel u:r:init:s0
+    oneshot
+    disabled
+
+on property:recovery.mcuif_svc.start=1
+    start recovery_mcuif_svc
+    
+on property:recovery.debug.control=1
+    start console
+
